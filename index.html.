@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZLZIN_BLOX</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0d0d0d;
+  color:white;
+}
+
+header{
+  background:#6a00b3; /* Roxo */
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.logo{
+  font-weight:bold;
+  font-size:20px;
+}
+
+button{
+  background:#9c27b0; /* Roxo mais claro */
+  border:none;
+  padding:10px;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.banner{
+  background:linear-gradient(90deg,#6a00b3,#9c27b0);
+  padding:40px 20px;
+  text-align:center;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:15px;
+  padding:20px;
+}
+
+.card{
+  background:#1a1a1a;
+  padding:20px;
+  border-radius:15px;
+  text-align:center;
+  transition:0.3s;
+}
+
+.card:hover{
+  background:#6a00b3;
+  transform:scale(1.05);
+}
+
+.modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.95);
+  text-align:center;
+  padding-top:40px;
+}
+
+.modal img{
+  width:250px;
+  margin:20px 0;
+}
+
+.close{
+  position:absolute;
+  top:20px;
+  right:20px;
+  cursor:pointer;
+  font-size:20px;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  border-radius:6px;
+  border:none;
+  width:80%;
+}
+
+#loginArea{
+  text-align:center;
+  padding:30px;
+}
+
+/* WhatsApp fixo */
+#whatsappBtn{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#25d366;
+  color:white;
+  border:none;
+  padding:15px;
+  border-radius:50%;
+  font-size:20px;
+  cursor:pointer;
+  z-index:999;
+  box-shadow:0 0 10px #25d366;
+}
+
+/* efeito partículas */
+#particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width:100%;
+  height:100%;
+  z-index: -1;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Partículas -->
+<canvas id="particles"></canvas>
+
+<header>
+  <div class="logo">🔥 ZLZIN_BLOX</div>
+  <div onclick="verPedidos()">Meus Pedidos</div>
+</header>
+
+<div id="loginArea">
+  <h2>Login / Cadastro</h2>
+  <input type="text" id="user" placeholder="Usuário"><br>
+  <input type="password" id="pass" placeholder="Senha"><br>
+  <button onclick="cadastrar()">Cadastrar</button>
+  <button onclick="login()">Entrar</button>
+</div>
+
+<div id="loja" style="display:none;">
+
+  <div class="banner">
+    <h1>ITENS DIGITAIS</h1>
+    <p>ENTREGA RÁPIDA</p>
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+      <h3>Produto 1</h3>
+      <p>R$ 10</p>
+      <button onclick="comprar(10)">Comprar</button>
+    </div>
+
+    <div class="card">
+      <h3>Produto 2</h3>
+      <p>R$ 20</p>
+      <button onclick="comprar(20)">Comprar</button>
+    </div>
+
+    <div class="card">
+      <h3>Produto 3</h3>
+      <p>R$ 30</p>
+      <button onclick="comprar(30)">Comprar</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal pagamento -->
+<div class="modal" id="pagamento">
+  <div class="close" onclick="fechar()">X</div>
+  <h2>Pague via PIX</h2>
+  <p id="valor"></p>
+  <p id="pedido"></p>
+  
+  <!-- QR Pix -->
+  <img src="qr.png" style="width:250px; margin:10px 0;">
+  
+  <!-- Código Pix em texto -->
+  <p style="background:#1a1a1a; color:#fff; padding:10px; border-radius:8px; font-weight:bold; word-break:break-all;">
+    00020126580014BR.GOV.BCB.PIX0136c65dc5c2-e6c8-4f82-9787-37b361d1c659520400005303986540520.005802BR5925Zlatan Henrique Carmo dos6009SAO PAULO62140510ORupM2pGlC63047111
+  </p>
+
+  <button id="zapBtn">Enviar comprovante no WhatsApp</button>
+</div>
+
+<!-- WhatsApp fixo -->
+<button id="whatsappBtn" onclick="window.open('https://wa.me/5524981049548','_blank')">📱</button>
+
+<script>
+// Partículas simples
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let particles = [];
+for(let i=0;i<100;i++){
+  particles.push({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    r: Math.random()*3+1,
+    dx: Math.random()*1-0.5,
+    dy: Math.random()*1-0.5
+  });
+}
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let p of particles){
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(106,0,179,0.7)';
+    ctx.fill();
+    p.x+=p.dx;
+    p.y+=p.dy;
+    if(p.x>canvas.width)p.x=0;
+    if(p.y>canvas.height)p.y=0;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// Login/Cadastro simples
+let usuarioAtual = null;
+function cadastrar(){
+  let user = document.getElementById("user").value;
+  let pass = document.getElementById("pass").value;
+  localStorage.setItem("user", user);
+  localStorage.setItem("pass", pass);
+  alert("Cadastro feito!");
+}
+
+function login(){
+  let user = document.getElementById("user").value;
+  let pass = document.getElementById("pass").value;
+  if(user === localStorage.getItem("user") && pass === localStorage.getItem("pass")){
+    usuarioAtual = user;
+    document.getElementById("loginArea").style.display="none";
+    document.getElementById("loja").style.display="block";
+  } else {
+    alert("Dados incorretos!");
+  }
+}
+
+// Compras
+function comprar(valor){
+  let numeroPedido = Math.floor(Math.random()*100000);
+  document.getElementById("valor").innerText = "Valor: R$ "+valor;
+  document.getElementById("pedido").innerText = "Pedido Nº: "+numeroPedido;
+
+  let mensagem = "Olá, fiz o pagamento! Pedido Nº "+numeroPedido+" Valor: R$ "+valor;
+  let link = "https://wa.me/5524981049548?text="+encodeURIComponent(mensagem);
+
+  document.getElementById("zapBtn").onclick = function(){
+    window.open(link,"_blank");
+  }
+
+  document.getElementById("pagamento").style.display="block";
+}
+
+function fechar(){
+  document.getElementById("pagamento").style.display="none";
+}
+
+function verPedidos(){
+  alert("Sistema simples: os pedidos são enviados pelo WhatsApp.");
+}
+</script>
+
+</body>
+  </html>
