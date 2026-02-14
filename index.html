@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZLZIN_BLOX</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#0a0014;
+color:white;
+overflow-x:hidden;
+}
+
+#particles{
+position:fixed;
+top:0;
+left:0;
+z-index:-1;
+}
+
+header{
+background:#1a0026;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+border-bottom:2px solid #b300ff;
+box-shadow:0 0 15px #b300ff;
+}
+
+.logo{
+font-weight:bold;
+font-size:20px;
+color:#d966ff;
+text-shadow:0 0 10px #b300ff;
+}
+
+button{
+background:#8000ff;
+border:none;
+padding:10px;
+border-radius:8px;
+color:white;
+cursor:pointer;
+margin-top:10px;
+transition:0.3s;
+box-shadow:0 0 10px #8000ff;
+}
+
+button:hover{
+background:#b300ff;
+transform:scale(1.05);
+box-shadow:0 0 20px #b300ff;
+}
+
+.banner{
+background:linear-gradient(90deg,#1a0026,#4d0099);
+padding:40px 20px;
+text-align:center;
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:15px;
+padding:20px;
+}
+
+.card{
+background:#14001f;
+padding:20px;
+border-radius:15px;
+text-align:center;
+transition:0.3s;
+border:1px solid #8000ff;
+box-shadow:0 0 10px #4d0099;
+}
+
+.card:hover{
+transform:scale(1.08);
+box-shadow:0 0 25px #b300ff;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.95);
+text-align:center;
+padding-top:40px;
+z-index:10;
+}
+
+.close{
+position:absolute;
+top:20px;
+right:20px;
+cursor:pointer;
+font-size:20px;
+color:#b300ff;
+}
+
+input{
+padding:10px;
+margin:5px;
+border-radius:6px;
+border:none;
+width:80%;
+}
+
+#loginArea{
+text-align:center;
+padding:30px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="particles"></canvas>
+
+<header>
+<div class="logo">🔥 ZLZIN_BLOX</div>
+<div onclick="abrirAdmin()" style="cursor:pointer;">Painel ADM</div>
+</header>
+
+<div id="loginArea">
+<h2>Login / Cadastro</h2>
+<input type="text" id="user" placeholder="Usuário"><br>
+<input type="password" id="pass" placeholder="Senha"><br>
+<button onclick="cadastrar()">Cadastrar</button>
+<button onclick="login()">Entrar</button>
+</div>
+
+<div id="loja" style="display:none;">
+<div class="banner">
+<h1>ITENS DIGITAIS</h1>
+<p>ENTREGA RÁPIDA</p>
+</div>
+<div class="cards"></div>
+</div>
+
+<div class="modal" id="pagamento">
+<div class="close" onclick="fecharPagamento()">X</div>
+<h2>Pagamento via PIX</h2>
+<p id="infoPedido"></p>
+<img id="qrPix" width="250">
+</div>
+
+<div class="modal" id="adminPanel">
+<div class="close" onclick="fecharAdmin()">X</div>
+<h2>Painel ADM</h2>
+
+<input type="text" id="novoNome" placeholder="Nome do Produto"><br>
+<input type="number" id="novoPreco" placeholder="Preço"><br>
+<button onclick="adicionarProduto()">Adicionar Produto</button>
+
+<h3>Produtos:</h3>
+<div id="listaAdmin"></div>
+
+<h3>Pedidos:</h3>
+<div id="listaPedidos"></div>
+</div>
+
+<script>
+
+/* LOGIN */
+
+function cadastrar(){
+localStorage.setItem("user", user.value);
+localStorage.setItem("pass", pass.value);
+alert("Cadastro feito!");
+}
+
+function login(){
+if(user.value === localStorage.getItem("user") &&
+   pass.value === localStorage.getItem("pass")){
+document.getElementById("loginArea").style.display="none";
+document.getElementById("loja").style.display="block";
+}else{
+alert("Dados incorretos!");
+}
+}
+
+/* COMPRA */
+
+function comprar(valor, index){
+
+let numeroPedido = Math.floor(Math.random()*100000);
+
+let pedido = {
+numero: numeroPedido,
+valor: valor,
+status: "Aguardando Pagamento",
+produtoIndex: index,
+entregue:false
+};
+
+let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+pedidos.push(pedido);
+localStorage.setItem("pedidos", JSON.stringify(pedidos));
+
+gerarQR(valor, numeroPedido);
+}
+
+function gerarQR(valor, numeroPedido){
+let payload = `Pedido ${numeroPedido} Valor ${valor}`;
+let qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+
+document.getElementById("qrPix").src = qrURL;
+document.getElementById("infoPedido").innerText =
+"Pedido Nº " + numeroPedido + " | Valor: R$ " + valor;
+
+document.getElementById("pagamento").style.display="block";
+}
+
+function fecharPagamento(){
+document.getElementById("pagamento").style.display="none";
+}
+
+/* ADMIN */
+
+function abrirAdmin(){
+let senha = prompt("Senha ADM:");
+if(senha === "1234"){
+document.getElementById("adminPanel").style.display="block";
+carregarAdmin();
+carregarPedidos();
+}else{
+alert("Senha incorreta!");
+}
+}
+
+function fecharAdmin(){
+document.getElementById("adminPanel").style.display="none";
+}
+
+function adicionarProduto(){
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+
+let entrega = prompt("Digite o código ou entrega automática:");
+
+produtos.push({
+nome: novoNome.value,
+preco: novoPreco.value,
+entrega: entrega
+});
+
+localStorage.setItem("produtos",JSON.stringify(produtos));
+renderizarProdutos();
+carregarAdmin();
+}
+
+function renderizarProdutos(){
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+let area = document.querySelector(".cards");
+area.innerHTML="";
+
+produtos.forEach((p,index)=>{
+area.innerHTML+=`
+<div class="card">
+<h3>${p.nome}</h3>
+<p>R$ ${p.preco}</p>
+<button onclick="comprar(${p.preco}, ${index})">Comprar</button>
+</div>
+`;
+});
+}
+
+function carregarAdmin(){
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+listaAdmin.innerHTML="";
+produtos.forEach((p,index)=>{
+listaAdmin.innerHTML+=`
+<p>${p.nome} - R$ ${p.preco}
+<button onclick="removerProduto(${index})">Remover</button>
+</p>
+`;
+});
+}
+
+function removerProduto(index){
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+produtos.splice(index,1);
+localStorage.setItem("produtos",JSON.stringify(produtos));
+renderizarProdutos();
+carregarAdmin();
+}
+
+function carregarPedidos(){
+let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+listaPedidos.innerHTML="";
+pedidos.forEach((p,index)=>{
+listaPedidos.innerHTML+=`
+<p>
+Pedido Nº ${p.numero} - R$ ${p.valor} - ${p.status}
+<button onclick="marcarPago(${index})">Marcar Pago</button>
+</p>
+`;
+});
+}
+
+function marcarPago(index){
+let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+
+pedidos[index].status="Pago";
+pedidos[index].entregue=true;
+
+localStorage.setItem("pedidos",JSON.stringify(pedidos));
+
+let produto = produtos[pedidos[index].produtoIndex];
+
+alert("ENTREGA AUTOMÁTICA:\n\n"+produto.entrega);
+
+carregarPedidos();
+}
+
+/* PARTÍCULAS */
+
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+
+for(let i=0;i<80;i++){
+particles.push({
+x: Math.random()*canvas.width,
+y: Math.random()*canvas.height,
+radius: Math.random()*2,
+dx: (Math.random()-0.5),
+dy: (Math.random()-0.5)
+});
+}
+
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+particles.forEach(p=>{
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+ctx.fillStyle="#b300ff";
+ctx.fill();
+p.x+=p.dx;
+p.y+=p.dy;
+if(p.x<0||p.x>canvas.width) p.dx*=-1;
+if(p.y<0||p.y>canvas.height) p.dy*=-1;
+});
+requestAnimationFrame(animate);
+}
+
+animate();
+
+window.onload = function(){
+renderizarProdutos();
+}
+
+</script>
+
+</body>
+</html>
